@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meu Bairro, Meus Direitos — Aplicativo</title>
+<style>
+  :root {
+    --papel:#F5F1E6; --tinta:#202A22; --tinta-suave:#586357;
+    --teal:#1F8A72; --teal-claro:#DCEFE9;
+    --terra:#E0562B; --terra-claro:#FBE3D9;
+    --ocre:#E0A526; --ocre-claro:#FBF0D6;
+    --ferro:#5B6E8C; --linha:#DCD5C3;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--papel); color:var(--tinta); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+  .wrap { max-width:520px; margin:0 auto; padding:20px 16px 60px; }
+  .kicker { font-size:13px; color:var(--teal); letter-spacing:.02em; margin:0 0 10px; }
+  h1 { font-family:"Iowan Old Style","Palatino Linotype",Georgia,serif; font-size:34px; line-height:1.15; font-weight:500; margin:0 0 12px; }
+  .lead { color:var(--tinta-suave); font-size:16px; margin:0 0 22px; max-width:46ch; line-height:1.6; }
+  .tutorial { background:#fff; border:1px solid var(--linha); border-radius:14px; padding:16px; margin-bottom:18px; }
+  .tutorial summary { font-weight:600; font-size:14px; cursor:pointer; list-style:none; display:flex; align-items:center; gap:8px; }
+  .tutorial summary::-webkit-details-marker{ display:none; }
+  .tutorial summary::before { content:"📖"; }
+  .passo { display:flex; gap:10px; margin-top:12px; font-size:13.5px; }
+  .passo b { flex-shrink:0; width:22px; height:22px; border-radius:50%; background:var(--ocre-claro); color:var(--ocre); display:flex; align-items:center; justify-content:center; font-size:12px; }
+  .passo span { color:var(--tinta-suave); }
+  .exemplo { background:var(--ocre-claro); border-left:4px solid var(--ocre); border-radius:0 10px 10px 0; padding:12px 14px; margin-top:14px; font-size:13px; color:#6B4B0E; }
+  .exemplo strong { color:#4a3400; }
+
+  .mapa-card { background:#fff; border-radius:18px; overflow:hidden; border:1px solid var(--linha); margin-bottom:14px; }
+  .mapa-svg-wrap { position:relative; width:100%; aspect-ratio:1/1.05; background:#EDE7D6; }
+  .mapa-svg-wrap svg { width:100%; height:100%; display:block; }
+  .marcador { position:absolute; transform:translate(-50%,-100%); cursor:pointer; display:flex; flex-direction:column; align-items:center; }
+  .marcador .pino { width:38px; height:38px; border-radius:50% 50% 50% 0; transform:rotate(-45deg); display:flex; align-items:center; justify-content:center; box-shadow:0 2px 6px rgba(0,0,0,.25); }
+  .marcador .pino span { transform:rotate(45deg); font-size:16px; }
+  .marcador.forte .pino { background:var(--teal); }
+  .marcador.atencao .pino { background:var(--terra); animation:pulso 1.8s ease-out 1; }
+  .marcador label { margin-top:2px; font-size:10.5px; font-weight:600; background:rgba(255,255,255,.9); padding:1px 6px; border-radius:6px; white-space:nowrap; color:var(--tinta); }
+  @keyframes pulso { 0%{ box-shadow:0 0 0 0 rgba(224,86,43,.5); } 100%{ box-shadow:0 0 0 16px rgba(224,86,43,0); } }
+
+  .modo-barra { display:flex; align-items:center; justify-content:space-between; padding:12px 14px; background:var(--teal-claro); font-size:13px; }
+  .modo-barra.ativo { background:var(--terra-claro); }
+  #btnAdicionar { background:var(--terra); color:#fff; border:none; border-radius:10px; padding:10px 14px; font-size:13.5px; font-weight:700; cursor:pointer; width:100%; margin-bottom:10px; }
+  #btnAdicionar.ativo { background:var(--tinta); }
+  #btnExportar { background:var(--teal); color:#fff; border:none; border-radius:10px; padding:12px 14px; font-size:14px; font-weight:700; cursor:pointer; width:100%; margin-top:6px; }
+  .legenda { display:flex; gap:16px; font-size:12px; color:var(--tinta-suave); padding:10px 4px 0; }
+  .legenda span { display:flex; align-items:center; gap:6px; }
+  .dot { width:10px; height:10px; border-radius:50%; display:inline-block; }
+  .dot.forte { background:var(--teal); } .dot.atencao { background:var(--terra); }
+
+  .contador { font-size:12.5px; color:var(--tinta-suave); text-align:center; margin:10px 0 4px; }
+
+  /* MODAL */
+  .overlay { position:fixed; inset:0; background:rgba(20,24,20,.5); display:none; align-items:flex-end; justify-content:center; z-index:50; }
+  .overlay.aberto { display:flex; }
+  .modal { background:#fff; width:100%; max-width:520px; max-height:88vh; overflow-y:auto; border-radius:20px 20px 0 0; padding:20px 18px 28px; animation:subir .25s ease-out; }
+  @keyframes subir { from{ transform:translateY(30px); opacity:0; } to{ transform:translateY(0); opacity:1; } }
+  .modal-topo { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; }
+  .modal-topo h2 { font-size:17px; margin:0; }
+  .fechar { background:none; border:none; font-size:20px; color:var(--tinta-suave); cursor:pointer; }
+  .tag { display:inline-block; font-size:11px; font-weight:700; padding:3px 9px; border-radius:20px; margin-bottom:10px; }
+  .tag.forte { background:var(--teal-claro); color:var(--teal); }
+  .tag.atencao { background:var(--terra-claro); color:var(--terra); }
+  .campo-label { font-size:12px; font-weight:700; color:var(--tinta-suave); margin:14px 0 6px; }
+  textarea, input[type=text] { width:100%; border:1.5px solid var(--linha); border-radius:10px; padding:9px 11px; font-size:14px; font-family:inherit; resize:vertical; }
+  .pergunta-rota { font-size:12.5px; color:var(--tinta-suave); margin-bottom:4px; }
+  .info-fixo { font-size:14px; color:var(--tinta-suave); line-height:1.6; }
+  .midia-row { display:flex; gap:10px; margin-top:8px; }
+  .midia-btn { flex:1; border:1.5px dashed var(--linha); border-radius:10px; padding:12px; text-align:center; font-size:13px; color:var(--tinta-suave); cursor:pointer; background:var(--papel); }
+  .preview-foto { width:100%; border-radius:10px; margin-top:8px; display:none; }
+  .preview-audio { width:100%; margin-top:8px; display:none; }
+  .rec-ativo { background:var(--terra-claro) !important; color:var(--terra) !important; border-color:var(--terra) !important; }
+  .modal-acoes { display:flex; gap:10px; margin-top:18px; }
+  .btn-salvar { flex:2; background:var(--teal); color:#fff; border:none; border-radius:10px; padding:12px; font-weight:700; cursor:pointer; }
+  .btn-excluir { flex:1; background:none; border:1.5px solid var(--terra); color:var(--terra); border-radius:10px; padding:12px; font-weight:700; cursor:pointer; }
+  .aviso-permissao { font-size:11.5px; color:var(--terra); margin-top:6px; }
+  footer { margin-top:30px; text-align:center; font-size:11.5px; color:var(--tinta-suave); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="kicker">Aplicativo Educacional · ODS 01 · OC10</p>
+  <h1>Meu Bairro, Meus Direitos</h1>
+  <p class="lead">Toque nos pontos fortes para conhecê-los. Toque em "Adicionar Ponto de Atenção" e marque no mapa os problemas que você encontrar pelo caminho.</p>
+
+  <details class="tutorial" open>
+    <summary>Como usar este aplicativo</summary>
+    <div class="passo"><b>1</b><span>Percorra a rota real do seu bairro observando ruas, calçadas e travessias.</span></div>
+    <div class="passo"><b>2</b><span>Toque em <strong>"+ Adicionar Ponto de Atenção"</strong> e depois toque no mapa, no local do problema.</span></div>
+    <div class="passo"><b>3</b><span>Registre com foto, um áudio curto e/ou um texto, respondendo as perguntas de rota.</span></div>
+    <div class="passo"><b>4</b><span>No final, toque em <strong>"Exportar Registros"</strong> para baixar seu relatório e juntar ao trabalho da turma.</span></div>
+    <div class="exemplo"><strong>Exemplo de registro bem feito:</strong> "Elevado próximo ao Jardim Indonésia — sem acostamento em um dos lados; ao caminhar ali, quase caí. É uma área de morro, então uma queda seria grave." — esse tipo de detalhe é o que torna o diagnóstico útil.</div>
+  </details>
+
+  <div class="mapa-card">
+    <div class="mapa-svg-wrap" id="mapaWrap">
+      <svg viewBox="0 0 400 420" preserveAspectRatio="none">
+        <rect width="400" height="420" fill="#EDE7D6"/>
+        <path d="M -10 340 Q 90 300 130 250 T 260 150 T 410 90" stroke="#fff" stroke-width="22" fill="none"/>
+        <path d="M -10 340 Q 90 300 130 250 T 260 150 T 410 90" stroke="#D9D2BF" stroke-width="1.5" fill="none" stroke-dasharray="6 6"/>
+        <path d="M -10 60 Q 120 40 180 120 T 300 260 Q 340 320 410 360" stroke="#5B6E8C" stroke-width="3" fill="none" stroke-dasharray="10 8" opacity="0.55"/>
+        <text x="230" y="270" font-size="10" fill="#5B6E8C" font-family="sans-serif">via férrea</text>
+      </svg>
+      <div id="marcadoresFixos"></div>
+      <div id="marcadoresAtencao"></div>
+    </div>
+    <div class="legenda">
+      <span><i class="dot forte"></i>Ponto forte</span>
+      <span><i class="dot atencao"></i>Ponto de atenção</span>
+    </div>
+  </div>
+
+  <div id="modoBarra" class="modo-barra">
+    <span id="modoTexto">Toque em um ponto forte para conhecê-lo.</span>
+  </div>
+
+  <button id="btnAdicionar">➕ Adicionar Ponto de Atenção</button>
+  <p class="contador" id="contador"></p>
+  <button id="btnExportar">📥 Exportar Registros (texto + fotos + áudios)</button>
+
+  <footer>Projeto Interdisciplinar I — Etapa B · OC10 · Licenciatura em Sociologia — UNINTER<br>Márcia Aparecida Alves</footer>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal" id="modal"></div>
+</div>
+
+<script>
+const pontosFortes = [
+  {id:'f1', x:22, y:18, icon:'📚', label:'Biblioteca', desc:'Biblioteca pública do bairro — acesso à leitura e à informação.'},
+  {id:'f2', x:48, y:17, icon:'🏫', label:'Escola', desc:'Escola municipal de referência para a comunidade.'},
+  {id:'f3', x:74, y:20, icon:'⛪', label:'Igreja', desc:'Espaço de convivência comunitária e apoio social.'},
+  {id:'f4', x:80, y:44, icon:'🏛️', label:'CRAS', desc:'Centro de Referência de Assistência Social — porta de entrada do SUAS.'},
+  {id:'f5', x:20, y:52, icon:'🚌', label:'Ponto de ônibus', desc:'Parada de transporte público que atende a região.'},
+  {id:'f6', x:34, y:70, icon:'🌳', label:'Praça', desc:'Espaço de lazer e convivência ao ar livre.'},
+  {id:'f7', x:58, y:66, icon:'🎓', label:'Polo UNINTER', desc:'Polo de apoio presencial EaD.'},
+  {id:'f8', x:70, y:78, icon:'🏥', label:'Posto de Saúde', desc:'Unidade Básica de Saúde — porta de entrada do SUS.'},
+];
+
+let pontosAtencao = JSON.parse(localStorage.getItem('mbmd_pontos') || '[]');
+let modoAdicionar = false;
+let pontoAtual = null;
+let audioChunks = [], mediaRecorder = null, audioStreamAtual = null;
+
+const wrap = document.getElementById('mapaWrap');
+const fixosEl = document.getElementById('marcadoresFixos');
+const atencaoEl = document.getElementById('marcadoresAtencao');
+const overlay = document.getElementById('overlay');
+const modal = document.getElementById('modal');
+const btnAdicionar = document.getElementById('btnAdicionar');
+const modoBarra = document.getElementById('modoBarra');
+const modoTexto = document.getElementById('modoTexto');
+
+function salvarPontos(){ localStorage.setItem('mbmd_pontos', JSON.stringify(pontosAtencao)); atualizarContador(); }
+function atualizarContador(){ document.getElementById('contador').textContent = pontosAtencao.length + ' ponto(s) de atenção registrado(s)'; }
+
+function renderFixos(){
+  fixosEl.innerHTML = '';
+  pontosFortes.forEach(p=>{
+    const m = document.createElement('div');
+    m.className = 'marcador forte';
+    m.style.left = p.x+'%'; m.style.top = p.y+'%';
+    m.innerHTML = `<div class="pino"><span>${p.icon}</span></div><label>${p.label}</label>`;
+    m.onclick = ()=> abrirInfoFixo(p);
+    fixosEl.appendChild(m);
+  });
+}
+function renderAtencao(){
+  atencaoEl.innerHTML = '';
+  pontosAtencao.forEach(p=>{
+    const m = document.createElement('div');
+    m.className = 'marcador atencao';
+    m.style.left = p.x+'%'; m.style.top = p.y+'%';
+    m.innerHTML = `<div class="pino"><span>⚠️</span></div><label>${p.titulo || 'Ponto de atenção'}</label>`;
+    m.onclick = (e)=>{ e.stopPropagation(); abrirEditarAtencao(p); };
+    atencaoEl.appendChild(m);
+  });
+  atualizarContador();
+}
+
+btnAdicionar.onclick = ()=>{
+  modoAdicionar = !modoAdicionar;
+  btnAdicionar.classList.toggle('ativo', modoAdicionar);
+  btnAdicionar.textContent = modoAdicionar ? '✖ Cancelar — toque no mapa' : '➕ Adicionar Ponto de Atenção';
+  modoBarra.classList.toggle('ativo', modoAdicionar);
+  modoTexto.textContent = modoAdicionar ? 'Toque no mapa, no local exato do problema.' : 'Toque em um ponto forte para conhecê-lo.';
+};
+
+wrap.addEventListener('click', (e)=>{
+  if(!modoAdicionar) return;
+  const rect = wrap.getBoundingClientRect();
+  const x = ((e.clientX - rect.left) / rect.width) * 100;
+  const y = ((e.clientY - rect.top) / rect.height) * 100;
+  const novo = { id:'a'+Date.now(), x, y, titulo:'', obs:'', ruas:'', travessias:'', transporte:'', obstaculos:'', foto:null, audio:null, data:new Date().toLocaleString('pt-BR') };
+  pontosAtencao.push(novo);
+  renderAtencao();
+  btnAdicionar.click();
+  abrirEditarAtencao(novo);
+});
+
+function abrirInfoFixo(p){
+  modal.innerHTML = `
+    <div class="modal-topo"><h2>${p.icon} ${p.label}</h2><button class="fechar" onclick="fecharModal()">✕</button></div>
+    <span class="tag forte">Ponto forte</span>
+    <p class="info-fixo">${p.desc}</p>`;
+  overlay.classList.add('aberto');
+}
+
+function abrirEditarAtencao(p){
+  pontoAtual = p;
+  modal.innerHTML = `
+    <div class="modal-topo"><h2>⚠️ Ponto de atenção</h2><button class="fechar" onclick="fecharModal()">✕</button></div>
+    <span class="tag atencao">Ponto de atenção</span>
+    <div class="campo-label">Título curto</div>
+    <input type="text" id="campoTitulo" placeholder="Ex: Calçada tomada por matagal" value="${p.titulo||''}">
+
+    <div class="campo-label">Perguntas de rota</div>
+    <p class="pergunta-rota">Como são as ruas principais e secundárias?</p>
+    <textarea id="campoRuas" rows="2">${p.ruas||''}</textarea>
+    <p class="pergunta-rota" style="margin-top:10px">Há travessias seguras?</p>
+    <textarea id="campoTravessias" rows="2">${p.travessias||''}</textarea>
+    <p class="pergunta-rota" style="margin-top:10px">Existe transporte público próximo?</p>
+    <textarea id="campoTransporte" rows="2">${p.transporte||''}</textarea>
+    <p class="pergunta-rota" style="margin-top:10px">Há obstáculos (calçadas, buracos, ladeiras)?</p>
+    <textarea id="campoObstaculos" rows="2">${p.obstaculos||''}</textarea>
+
+    <div class="campo-label">Observação livre</div>
+    <textarea id="campoObs" rows="3" placeholder="Descreva o que você viu...">${p.obs||''}</textarea>
+
+    <div class="campo-label">Mídia</div>
+    <div class="midia-row">
+      <label class="midia-btn">📷 Foto<input type="file" accept="image/*" capture="environment" id="inputFoto" style="display:none"></label>
+      <div class="midia-btn" id="btnAudio">🎙️ Gravar áudio</div>
+    </div>
+    <img class="preview-foto" id="previewFoto" style="${p.foto?'display:block':''}" src="${p.foto||''}">
+    <audio class="preview-audio" id="previewAudio" controls style="${p.audio?'display:block':''}" src="${p.audio||''}"></audio>
+    <p class="aviso-permissao" id="avisoAudio"></p>
+
+    <div class="modal-acoes">
+      <button class="btn-salvar" onclick="salvarAtencao()">Salvar</button>
+      <button class="btn-excluir" onclick="excluirAtencao()">Excluir</button>
+    </div>`;
+  overlay.classList.add('aberto');
+
+  document.getElementById('inputFoto').addEventListener('change', function(e){
+    const file = e.target.files[0]; if(!file) return;
+    const reader = new FileReader();
+    reader.onload = ()=>{ document.getElementById('previewFoto').src = reader.result; document.getElementById('previewFoto').style.display='block'; pontoAtual._fotoTmp = reader.result; };
+    reader.readAsDataURL(file);
+  });
+
+  document.getElementById('btnAudio').addEventListener('click', toggleGravacao);
+}
+
+function toggleGravacao(){
+  const btn = document.getElementById('btnAudio');
+  if(mediaRecorder && mediaRecorder.state === 'recording'){
+    mediaRecorder.stop();
+    audioStreamAtual.getTracks().forEach(t=>t.stop());
+    btn.textContent = '🎙️ Gravar áudio'; btn.classList.remove('rec-ativo');
+    return;
+  }
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    document.getElementById('avisoAudio').textContent = 'Este navegador não permite gravar áudio. Use o campo de texto.';
+    return;
+  }
+  navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{
+    audioStreamAtual = stream;
+    audioChunks = [];
+    mediaRecorder = new MediaRecorder(stream);
+    mediaRecorder.ondataavailable = e=> audioChunks.push(e.data);
+    mediaRecorder.onstop = ()=>{
+      const blob = new Blob(audioChunks, {type:'audio/webm'});
+      const reader = new FileReader();
+      reader.onload = ()=>{ document.getElementById('previewAudio').src = reader.result; document.getElementById('previewAudio').style.display='block'; pontoAtual._audioTmp = reader.result; };
+      reader.readAsDataURL(blob);
+    };
+    mediaRecorder.start();
+    btn.textContent = '⏹ Parar gravação'; btn.classList.add('rec-ativo');
+  }).catch(()=>{ document.getElementById('avisoAudio').textContent = 'Permissão de microfone negada.'; });
+}
+
+function salvarAtencao(){
+  const p = pontoAtual;
+  p.titulo = document.getElementById('campoTitulo').value.trim();
+  p.ruas = document.getElementById('campoRuas').value.trim();
+  p.travessias = document.getElementById('campoTravessias').value.trim();
+  p.transporte = document.getElementById('campoTransporte').value.trim();
+  p.obstaculos = document.getElementById('campoObstaculos').value.trim();
+  p.obs = document.getElementById('campoObs').value.trim();
+  if(p._fotoTmp) p.foto = p._fotoTmp;
+  if(p._audioTmp) p.audio = p._audioTmp;
+  const idx = pontosAtencao.findIndex(x=>x.id===p.id);
+  pontosAtencao[idx] = p;
+  salvarPontos(); renderAtencao(); fecharModal();
+}
+function excluirAtencao(){
+  pontosAtencao = pontosAtencao.filter(x=>x.id!==pontoAtual.id);
+  salvarPontos(); renderAtencao(); fecharModal();
+}
+function fecharModal(){ overlay.classList.remove('aberto'); pontoAtual=null; }
+overlay.addEventListener('click', e=>{ if(e.target===overlay) fecharModal(); });
+
+async function baixarArquivo(dataURL, nome){
+  const res = await fetch(dataURL);
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = nome; a.click();
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById('btnExportar').addEventListener('click', async ()=>{
+  if(pontosAtencao.length === 0){ alert('Ainda não há pontos de atenção registrados.'); return; }
+  let txt = `MEU BAIRRO, MEUS DIREITOS — REGISTROS DE CAMPO\nExportado em: ${new Date().toLocaleString('pt-BR')}\n${'='.repeat(50)}\n\n`;
+  for(let i=0;i<pontosAtencao.length;i++){
+    const p = pontosAtencao[i];
+    const n = i+1;
+    txt += `PONTO ${n} — ${p.titulo || 'Sem título'}\nRegistrado em: ${p.data}\n`;
+    txt += `Ruas principais/secundárias: ${p.ruas || '—'}\nTravessias seguras: ${p.travessias || '—'}\nTransporte público: ${p.transporte || '—'}\nObstáculos: ${p.obstaculos || '—'}\nObservação livre: ${p.obs || '—'}\n`;
+    if(p.foto) txt += `Foto anexa: ponto_${n}_foto.jpg\n`;
+    if(p.audio) txt += `Áudio anexo: ponto_${n}_audio.webm\n`;
+    txt += `\n`;
+  }
+  const blob = new Blob([txt], {type:'text/plain;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'meu_bairro_registros.txt'; a.click();
+  URL.revokeObjectURL(url);
+
+  for(let i=0;i<pontosAtencao.length;i++){
+    const p = pontosAtencao[i]; const n = i+1;
+    if(p.foto) await new Promise(r=> setTimeout(()=>{ baixarArquivo(p.foto, `ponto_${n}_foto.jpg`); r(); }, 300));
+    if(p.audio) await new Promise(r=> setTimeout(()=>{ baixarArquivo(p.audio, `ponto_${n}_audio.webm`); r(); }, 300));
+  }
+});
+
+renderFixos(); renderAtencao();
+</script>
+</body>
+</html>
