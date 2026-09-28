@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meu Bairro, Meus Direitos — Projeto Interdisciplinar I</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root{
+  --papel:#F5F1E6;
+  --teal:#1F8A72;
+  --teal-dark:#176B57;
+  --terra:#E0562B;
+  --ocre:#E0A526;
+  --texto:#2C2C2C;
+  --cinza:#6B6B6B;
+  --radius:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--papel);color:var(--texto);line-height:1.65}
+
+/* HERO */
+.hero{background:linear-gradient(135deg,var(--teal-dark) 0%,var(--teal) 60%,#2aad8f 100%);color:#fff;padding:3rem 1.5rem 2.5rem;text-align:center}
+.hero-badge{display:inline-flex;gap:.5rem;align-items:center;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:2rem;padding:.35rem .9rem;font-size:.8rem;font-weight:600;letter-spacing:.04em;margin-bottom:1.2rem}
+.hero h1{font-size:clamp(1.6rem,5vw,2.6rem);font-weight:800;line-height:1.2;margin-bottom:.5rem}
+.hero h1 em{color:var(--ocre);font-style:normal}
+.hero p.sub{font-size:1rem;opacity:.88;max-width:560px;margin:.6rem auto 0}
+.hero-meta{margin-top:1.5rem;font-size:.78rem;opacity:.7;display:flex;gap:1rem;justify-content:center;flex-wrap:wrap}
+.ods-tags{display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap;margin-top:1.2rem}
+.ods-tag{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);border-radius:1rem;padding:.3rem .8rem;font-size:.78rem;font-weight:700}
+
+/* NAV */
+nav.toc{background:#fff;border-bottom:2px solid var(--teal);position:sticky;top:0;z-index:500;overflow-x:auto;white-space:nowrap;padding:.5rem 1rem}
+nav.toc a{display:inline-block;padding:.4rem .8rem;font-size:.8rem;font-weight:600;color:var(--teal);text-decoration:none;border-radius:1rem;transition:background .2s}
+nav.toc a:hover{background:var(--teal);color:#fff}
+
+/* SECTIONS */
+section{padding:2.5rem 1.5rem;max-width:900px;margin:0 auto}
+section h2{font-size:1.4rem;font-weight:800;color:var(--teal-dark);margin-bottom:1rem;padding-bottom:.4rem;border-bottom:3px solid var(--ocre);display:inline-block}
+section h3{font-size:1.05rem;font-weight:700;color:var(--terra);margin:1.2rem 0 .5rem}
+section p{margin-bottom:.8rem;color:#3a3a3a}
+
+/* CADERNO */
+.caderno-block{background:#fff;border-radius:var(--radius);box-shadow:0 2px 12px rgba(0,0,0,.08);overflow:hidden;margin-top:1.2rem}
+.caderno-block img{width:100%;display:block}
+.caderno-caption{padding:1rem 1.2rem;background:linear-gradient(135deg,#fffbf0,#f9f4e8);border-top:3px solid var(--ocre)}
+.caderno-caption strong{color:var(--teal-dark);font-size:.95rem}
+.caderno-caption p{font-size:.85rem;color:var(--cinza);margin-top:.3rem;margin-bottom:0}
+
+/* GRID */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-top:1rem}
+@media(max-width:600px){.grid2{grid-template-columns:1fr}}
+
+/* CARDS */
+.card{background:#fff;border-radius:var(--radius);box-shadow:0 2px 10px rgba(0,0,0,.07);overflow:hidden}
+.card img{width:100%;height:190px;object-fit:cover;display:block}
+.card-body{padding:.9rem 1rem}
+.card-body h4{font-size:.9rem;font-weight:700;margin-bottom:.3rem}
+.card-body p{font-size:.82rem;color:var(--cinza);margin:0}
+.badge{display:inline-block;font-size:.72rem;font-weight:700;padding:.2rem .6rem;border-radius:1rem;margin-bottom:.4rem}
+.badge-atencao{background:#fdecea;color:#c0392b}
+.badge-forte{background:#e8f5e9;color:#2e7d32}
+.badge-rede{background:#e3f2fd;color:#1565c0}
+
+/* MAPA */
+#mapa{height:420px;border-radius:var(--radius);box-shadow:0 2px 14px rgba(0,0,0,.12);margin-top:1rem}
+@media(max-width:600px){#mapa{height:300px}}
+.legenda-mapa{display:flex;gap:1rem;flex-wrap:wrap;margin-top:.7rem;font-size:.8rem}
+.legenda-item{display:flex;align-items:center;gap:.4rem}
+.dot{width:12px;height:12px;border-radius:50%;display:inline-block}
+.dot-verde{background:#2E7D32}
+.dot-vermelho{background:#C0392B}
+.dot-azul{background:#1565C0}
+
+/* PASSOS */
+.passo-list{list-style:none;margin-top:.8rem;display:flex;flex-direction:column;gap:.7rem}
+.passo-list li{display:flex;align-items:flex-start;gap:.8rem;background:#fff;padding:.8rem 1rem;border-radius:var(--radius);box-shadow:0 1px 6px rgba(0,0,0,.06)}
+.passo-num{min-width:32px;height:32px;border-radius:50%;background:var(--teal);color:#fff;font-weight:800;font-size:.85rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.passo-list li p{font-size:.87rem;margin:0;color:#3a3a3a}
+
+/* DOWNLOAD */
+.download-box{background:linear-gradient(135deg,var(--teal-dark),var(--teal));color:#fff;border-radius:var(--radius);padding:1.5rem;text-align:center;margin-top:1.5rem}
+.download-box h3{color:#fff;font-size:1.1rem;margin-bottom:.5rem}
+.download-box p{font-size:.87rem;opacity:.9;margin-bottom:1rem}
+.btn-download{display:inline-block;background:var(--ocre);color:#fff;font-weight:700;padding:.7rem 1.6rem;border-radius:2rem;text-decoration:none;font-size:.9rem;transition:transform .2s,box-shadow .2s}
+.btn-download:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,.25)}
+
+/* BASE LEGAL */
+.lei-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin-top:1rem}
+.lei-card{background:#fff;border-left:4px solid var(--teal);border-radius:0 var(--radius) var(--radius) 0;padding:1rem;box-shadow:0 1px 6px rgba(0,0,0,.07)}
+.lei-card h4{font-size:.85rem;font-weight:700;color:var(--teal-dark);margin-bottom:.3rem}
+.lei-card p{font-size:.8rem;color:var(--cinza);margin:0}
+
+/* REFS */
+.refs-list{list-style:none;margin-top:.8rem}
+.refs-list li{font-size:.82rem;color:#4a4a4a;padding:.5rem 0;border-bottom:1px solid #e8e0d0;line-height:1.5}
+.refs-list li:last-child{border-bottom:none}
+
+/* ID BOX */
+.id-box{background:#fff;border-radius:var(--radius);padding:1.2rem 1.5rem;margin-top:1.5rem;border-left:4px solid var(--teal);box-shadow:0 1px 8px rgba(0,0,0,.07);font-size:.83rem;color:var(--cinza)}
+.id-box strong{color:var(--texto)}
+
+footer{text-align:center;padding:1.5rem;font-size:.78rem;color:var(--cinza);border-top:1px solid #ddd;margin-top:2rem}
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="hero-badge">&#128218; Projeto Interdisciplinar I &mdash; Etapa B &nbsp;&middot;&nbsp; UNINTER 2026</div>
+  <h1><em>Meu Bairro, Meus Direitos</em></h1>
+  <p class="sub">Um Web App Educacional para o Ensino M&eacute;dio sobre territ&oacute;rio, pobreza e cidadania</p>
+  <div class="ods-tags">
+    <span class="ods-tag">&#127757; ODS 1 &mdash; Erradica&ccedil;&atilde;o da Pobreza</span>
+    <span class="ods-tag">&#128187; OC10 &mdash; Tecnologias nas Pr&aacute;ticas Educativas</span>
+  </div>
+  <div class="hero-meta">
+    <span>M&aacute;rcia Aparecida Alves &middot; RU 5781854</span>
+    <span>Licenciatura em Sociologia &middot; UNINTER</span>
+    <span>Polo PAP Ibirit&eacute;-MG</span>
+  </div>
+</header>
+
+<!-- NAV -->
+<nav class="toc">
+  <a href="#atividade">&#128211; Atividade Inicial</a>
+  <a href="#diagnostico">&#128269; Diagn&oacute;stico</a>
+  <a href="#mapa-section">&#128506; Mapa do Percurso</a>
+  <a href="#protagonismo">&#9994; Protagonismo</a>
+  <a href="#app-download">&#128242; Web App</a>
+  <a href="#base-legal">&#9878; Base Legal</a>
+  <a href="#referencias">&#128218; Refer&ecirc;ncias</a>
+</nav>
+
+<!-- ATIVIDADE INICIAL -->
+<section id="atividade">
+  <h2>&#128211; Atividade Inicial: O Ponto de Partida</h2>
+  <p>Antes de qualquer ferramenta digital, a proposta come&ccedil;ou no papel. A atividade inicial foi desenvolvida no caderno, com observa&ccedil;&atilde;o direta do territ&oacute;rio, mapeamento &agrave; m&atilde;o e reflex&atilde;o sobre as condi&ccedil;&otilde;es de vida no entorno da escola. Essa etapa &eacute; fundamental: o estudante precisa <strong>ver com os pr&oacute;prios olhos</strong> antes de registrar com a c&acirc;mera ou interagir com o mapa digital.</p>
+  <div class="caderno-block">
+    <img src="fotos/atividade_caderno.png" alt="Atividade no caderno — tabela de metas ODS 1, mapa social desenhado e produto digital em uso" loading="lazy" style="max-height:420px;width:100%;object-fit:contain;background:#f9f6ef"/>
+    <div class="caderno-caption">
+      <strong>&#128221; Atividade no Caderno — Momentos 1, 2 e 3</strong>
+      <p>Dupla página com: identificação (nome, RU, curso, polo, data) · tabela de metas ODS 1 preenchida (1.1 a 1.b) · mapa social desenhado à mão com rota, equipamentos públicos e rede de proteção · registro do produto digital em uso.</p>
+    </div>
+  </div>
+  <h3>Por que come&ccedil;ar no papel?</h3>
+  <p>A metodologia parte da <strong>experi&ecirc;ncia concreta do estudante</strong> com seu territ&oacute;rio antes de introduzir a tecnologia. Isso alinha-se &agrave; pedagogia de Milton Santos: o espa&ccedil;o geogr&aacute;fico &eacute; produto das rela&ccedil;&otilde;es sociais e deve ser lido como texto vivo, n&atilde;o apenas como dado cartogr&aacute;fico.</p>
+</section>
+
+<!-- DIAGNÓSTICO -->
+<section id="diagnostico">
+  <h2>&#128269; Diagn&oacute;stico de Campo &mdash; V&aacute;rzea, Ibirit&eacute;-MG</h2>
+  <p>O percurso foi realizado a p&eacute; pelo bairro V&aacute;rzea e entorno, registrando as contradi&ccedil;&otilde;es do territ&oacute;rio: infraestrutura degradada convivendo com equipamentos p&uacute;blicos essenciais e redes comunit&aacute;rias ativas.</p>
+
+  <h3>&#9888; Pontos de Aten&ccedil;&atilde;o &mdash; Vulnerabilidades identificadas</h3>
+  <div class="grid2">
+    <div class="card">
+      <img src="fotos/percurso_1_praca.png" alt="Pra&ccedil;a com brinquedos quebrados" loading="lazy"/>
+      <div class="card-body">
+        <span class="badge badge-atencao">&#9888; Ponto de Aten&ccedil;&atilde;o</span>
+        <h4>Pra&ccedil;a com brinquedos quebrados</h4>
+        <p>Equipamento p&uacute;blico degradado, sem manuten&ccedil;&atilde;o. Aus&ecirc;ncia de espa&ccedil;o seguro de lazer &mdash; fator de vulnerabilidade social.</p>
+      </div>
+    </div>
+    <div class="card">
+      <img src="fotos/percurso_2_rotas.png" alt="Cal&ccedil;adas irregulares e ladeiras com mato" loading="lazy"/>
+      <div class="card-body">
+        <span class="badge badge-atencao">&#9888; Ponto de Aten&ccedil;&atilde;o</span>
+        <h4>Cal&ccedil;adas irregulares e ladeiras</h4>
+        <p>Vias com mato alto, cal&ccedil;adas quebradas e sem acessibilidade. Risco para idosos, pessoas com defici&ecirc;ncia e crian&ccedil;as.</p>
+      </div>
+    </div>
+  </div>
+
+  <h3>&#10003; Pontos Fortes &mdash; Recursos do territ&oacute;rio</h3>
+  <div class="grid2">
+    <div class="card">
+      <img src="fotos/percurso_3_prefeitura.png" alt="Prefeitura Municipal de Ibirit&eacute; e pra&ccedil;a coberta" loading="lazy"/>
+      <div class="card-body">
+        <span class="badge badge-forte">&#10003; Ponto Forte</span>
+        <h4>Prefeitura Municipal e Pra&ccedil;a Coberta</h4>
+        <p>Centro administrativo acess&iacute;vel &agrave; popula&ccedil;&atilde;o. Espa&ccedil;o de conviv&ecirc;ncia e eventos culturais. Refer&ecirc;ncia institucional para exerc&iacute;cio de cidadania.</p>
+      </div>
+    </div>
+    <div class="card">
+      <img src="fotos/sao_vicente.jpeg" alt="Lar S&atilde;o Vicente de Paulo" loading="lazy"/>
+      <div class="card-body">
+        <span class="badge badge-forte">&#10003; Ponto Forte</span>
+        <h4>Lar S&atilde;o Vicente de Paulo</h4>
+        <p>Institui&ccedil;&atilde;o de acolhimento e assist&ecirc;ncia social. Presen&ccedil;a comunit&aacute;ria hist&oacute;rica, atuando na prote&ccedil;&atilde;o de fam&iacute;lias vulner&aacute;veis.</p>
+      </div>
+    </div>
+  </div>
+
+  <h3>&#128309; Rede de Prote&ccedil;&atilde;o Social</h3>
+  <div class="grid2">
+    <div class="card">
+      <img src="fotos/percurso_4_rede_protecao.png" alt="Rede de prote&ccedil;&atilde;o social: Centro Educacional, Centro POP, Conselho Tutelar" loading="lazy"/>
+      <div class="card-body">
+        <span class="badge badge-rede">&#128309; Rede de Prote&ccedil;&atilde;o</span>
+        <h4>Equipamentos da rede de prote&ccedil;&atilde;o</h4>
+        <p>Centro Educacional, Centro POP, Conselho Tutelar e Esta&ccedil;&atilde;o Municipal &mdash; comp&otilde;em a rede de prote&ccedil;&atilde;o social do territ&oacute;rio.</p>
+      </div>
+    </div>
+    <div class="card">
+      <img src="fotos/igreja.jpeg" alt="Organiza&ccedil;&otilde;es religiosas e comunit&aacute;rias" loading="lazy"/>
+      <div class="card-body">
+        <span class="badge badge-rede">&#128309; Rede de Prote&ccedil;&atilde;o</span>
+        <h4>Organiza&ccedil;&otilde;es religiosas e comunit&aacute;rias</h4>
+        <p>Igreja Quadrangular e entidades religiosas que atuam como apoio informal, ofertando servi&ccedil;os e espa&ccedil;os de sociabilidade &agrave; comunidade.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MAPA -->
+<section id="mapa-section">
+  <h2>&#128506; Mapa do Percurso &mdash; Ibirit&eacute;, MG</h2>
+  <p>O percurso foi tra&ccedil;ado a partir do bairro V&aacute;rzea, passando pelos principais equipamentos p&uacute;blicos e pontos identificados no diagn&oacute;stico. Clique nos marcadores para ver detalhes de cada local.</p>
+  <div id="mapa"></div>
+  <div class="legenda-mapa">
+    <div class="legenda-item"><span class="dot dot-verde"></span> Ponto Forte</div>
+    <div class="legenda-item"><span class="dot dot-vermelho"></span> Ponto de Aten&ccedil;&atilde;o</div>
+    <div class="legenda-item"><span class="dot dot-azul"></span> Rede de Prote&ccedil;&atilde;o</div>
+  </div>
+</section>
+
+<!-- PROTAGONISMO -->
+<section id="protagonismo">
+  <h2>&#9994; Protagonismo Estudantil &mdash; Como Funciona</h2>
+  <p>O Web App <em>Meu Bairro, Meus Direitos</em> coloca o estudante como <strong>produtor de conhecimento sobre seu pr&oacute;prio territ&oacute;rio</strong>. A metodologia segue cinco etapas progressivas:</p>
+  <ul class="passo-list">
+    <li><span class="passo-num">1</span><p><strong>Observar:</strong> Caminhar pelo bairro com o olhar ativo. Identificar o que funciona bem, o que precisa de aten&ccedil;&atilde;o e quais s&atilde;o os servi&ccedil;os de prote&ccedil;&atilde;o dispon&iacute;veis.</p></li>
+    <li><span class="passo-num">2</span><p><strong>Registrar:</strong> Usar o Web App para fotografar locais, gravar relatos em &aacute;udio e adicionar pontos ao mapa interativo. Cada registro &eacute; salvo localmente no aparelho.</p></li>
+    <li><span class="passo-num">3</span><p><strong>Analisar:</strong> Classificar cada local como ponto forte, ponto de aten&ccedil;&atilde;o ou rede de prote&ccedil;&atilde;o. Refletir: &ldquo;Por que essa situa&ccedil;&atilde;o existe? Quem &eacute; respons&aacute;vel? O que pode mudar?&rdquo;</p></li>
+    <li><span class="passo-num">4</span><p><strong>Conectar com direitos:</strong> Cada ponto identificado conecta-se a direitos previstos na CF/1988, no ECA e no SUAS. O app mostra quais leis se aplicam e quais &oacute;rg&atilde;os podem ser acionados.</p></li>
+    <li><span class="passo-num">5</span><p><strong>Agir:</strong> Exportar o relat&oacute;rio, compartilhar com a turma, apresentar ao Conselho Tutelar ou Conselho Municipal de Direitos &mdash; transformando observa&ccedil;&atilde;o em a&ccedil;&atilde;o cidad&atilde;.</p></li>
+  </ul>
+</section>
+
+<!-- APP DOWNLOAD -->
+<section id="app-download">
+  <h2>&#128242; Web App para os Estudantes</h2>
+  <p>O aplicativo foi desenvolvido como uma p&aacute;gina HTML autossuficiente &mdash; funciona no celular sem precisar de internet ap&oacute;s download. Os estudantes usam o pr&oacute;prio aparelho para mapear o seu bairro.</p>
+  <div class="grid2">
+    <div>
+      <h3>O que o app permite:</h3>
+      <ul class="passo-list">
+        <li><span class="passo-num">&#128205;</span><p>Adicionar pontos ao mapa clicando no local</p></li>
+        <li><span class="passo-num">&#128247;</span><p>Fotografar e incorporar imagens ao registro</p></li>
+        <li><span class="passo-num">&#127897;</span><p>Gravar relatos em &aacute;udio sobre cada local</p></li>
+        <li><span class="passo-num">&#128196;</span><p>Exportar relat&oacute;rio completo com fotos e &aacute;udios</p></li>
+        <li><span class="passo-num">&#128190;</span><p>Salvar os pontos no celular (funciona offline)</p></li>
+      </ul>
+    </div>
+    <div>
+      <div class="download-box">
+        <h3>&#128242; Baixar o Web App</h3>
+        <p>Arquivo HTML &uacute;nico &mdash; abra no celular ou computador, sem instala&ccedil;&atilde;o</p>
+        <a href="app/meu_bairro_app.html" download="MeuBairroMeusDireitos_App.html" class="btn-download">&#11015; Baixar Web App</a>
+        <p style="font-size:.75rem;margin-top:.8rem;opacity:.8">Compat&iacute;vel com Chrome, Firefox e Safari &middot; Android e iOS</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BASE LEGAL -->
+<section id="base-legal">
+  <h2>&#9878; Base Legal e ODS</h2>
+  <div class="lei-grid">
+    <div class="lei-card">
+      <h4>&#127463;&#127479; Constitui&ccedil;&atilde;o Federal/1988</h4>
+      <p>Art. 3&ordm;: erradicar a pobreza &eacute; objetivo fundamental da Rep&uacute;blica. Art. 6&ordm;: direitos sociais. Art. 205&ndash;214: educa&ccedil;&atilde;o como direito.</p>
+    </div>
+    <div class="lei-card">
+      <h4>&#128218; ECA &mdash; Lei 8.069/1990</h4>
+      <p>Direito &agrave; conviv&ecirc;ncia familiar e comunit&aacute;ria, ao lazer e ao espa&ccedil;o seguro. Conselho Tutelar como mecanismo de prote&ccedil;&atilde;o acess&iacute;vel.</p>
+    </div>
+    <div class="lei-card">
+      <h4>&#9855; Lei 13.146/2015</h4>
+      <p>Estatuto da Pessoa com Defici&ecirc;ncia: acessibilidade urbana, cal&ccedil;adas e espa&ccedil;os p&uacute;blicos como direitos exig&iacute;veis.</p>
+    </div>
+    <div class="lei-card">
+      <h4>&#127968; SUAS / CRAS</h4>
+      <p>Sistema &Uacute;nico de Assist&ecirc;ncia Social: CRAS como porta de entrada da prote&ccedil;&atilde;o b&aacute;sica. Orienta&ccedil;&otilde;es t&eacute;cnicas MDS sobre territ&oacute;rio e pobreza.</p>
+    </div>
+    <div class="lei-card">
+      <h4>&#127757; Agenda 2030 / ODS 1</h4>
+      <p>Meta 1.4: at&eacute; 2030, garantir acesso a servi&ccedil;os b&aacute;sicos, tecnologia e recursos. Educa&ccedil;&atilde;o como vetor de transforma&ccedil;&atilde;o.</p>
+    </div>
+    <div class="lei-card">
+      <h4>&#128187; OC10 &mdash; Tecnologias</h4>
+      <p>Uso de tecnologias digitais nas pr&aacute;ticas educativas como forma de ampliar acesso, autonomia e protagonismo dos estudantes.</p>
+    </div>
+  </div>
+</section>
+
+<!-- REFERÊNCIAS -->
+<section id="referencias">
+  <h2>&#128218; Refer&ecirc;ncias Bibliogr&aacute;ficas</h2>
+  <ul class="refs-list">
+    <li>BRASIL. <strong>Constitui&ccedil;&atilde;o da Rep&uacute;blica Federativa do Brasil de 1988</strong>. Bras&iacute;lia: Senado Federal, 1988. Dispon&iacute;vel em: https://www.planalto.gov.br/ccivil_03/constituicao/constituicao.htm</li>
+    <li>BRASIL. <strong>Lei n&ordm; 13.146, de 6 de julho de 2015</strong>. Institui a Lei Brasileira de Inclus&atilde;o da Pessoa com Defici&ecirc;ncia. Bras&iacute;lia: Di&aacute;rio Oficial da Uni&atilde;o, 2015.</li>
+    <li>BRASIL. Minist&eacute;rio do Desenvolvimento Social e Combate &agrave; Fome. <strong>Orienta&ccedil;&otilde;es t&eacute;cnicas: Centro de Refer&ecirc;ncia de Assist&ecirc;ncia Social &mdash; CRAS</strong>. Bras&iacute;lia: MDS, 2009.</li>
+    <li>INSTITUTO DE PESQUISA ECON&Ocirc;MICA APLICADA &mdash; IPEA. <strong>ODS 1: Erradica&ccedil;&atilde;o da pobreza</strong>. Bras&iacute;lia: IPEA, 2019. Dispon&iacute;vel em: https://www.ipea.gov.br/ods/ods1.html</li>
+    <li>ORGANIZA&Ccedil;&Atilde;O DAS NA&Ccedil;&Otilde;ES UNIDAS &mdash; ONU. <strong>Transformando nosso mundo: a Agenda 2030 para o desenvolvimento sustent&aacute;vel</strong>. Nova York: ONU, 2015.</li>
+    <li>SANTOS, Milton. <strong>A natureza do espa&ccedil;o: t&eacute;cnica e tempo, raz&atilde;o e emo&ccedil;&atilde;o</strong>. 4. ed. S&atilde;o Paulo: Edusp, 2006.</li>
+  </ul>
+  <div class="id-box">
+    <strong>Identifica&ccedil;&atilde;o do Trabalho</strong><br>
+    Aluna: M&aacute;rcia Aparecida Alves &nbsp;&middot;&nbsp; RU: 5781854<br>
+    Curso: Licenciatura em Sociologia &nbsp;&middot;&nbsp; UNINTER<br>
+    Polo: PAP Ibirit&eacute;-MG &nbsp;&middot;&nbsp; Disciplina: Projeto Interdisciplinar I<br>
+    Produto: Web App Educacional &ldquo;Meu Bairro, Meus Direitos&rdquo; &nbsp;&middot;&nbsp; Etapa B &mdash; 2026
+  </div>
+</section>
+
+<footer>
+  Projeto Interdisciplinar I &mdash; Forma&ccedil;&atilde;o Geral Docente &middot; UNINTER 2026<br>
+  Produzido por M&aacute;rcia Aparecida Alves &middot; RU 5781854 &middot; Polo PAP Ibirit&eacute;-MG
+</footer>
+
+<script>
+(function(){
+  var mapa = L.map('mapa').setView([-20.0214,-44.0562],15);
+  L.tileLayer('https://tile.opentopomap.org/{z}/{x}/{y}.png',{
+    attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://opentopomap.org">OpenTopoMap</a>',
+    maxZoom:17
+  }).addTo(mapa);
+
+  function mkIcon(cor){
+    var c = cor==='verde'?'#2E7D32':cor==='vermelho'?'#C0392B':'#1565C0';
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="36" viewBox="0 0 28 36">'
+      +'<path d="M14 0C6.3 0 0 6.3 0 14c0 9.8 14 22 14 22s14-12.2 14-22C28 6.3 21.7 0 14 0z" fill="'+c+'"/>'
+      +'<circle cx="14" cy="14" r="6" fill="white"/></svg>';
+    return L.divIcon({html:svg,iconSize:[28,36],iconAnchor:[14,36],popupAnchor:[0,-36],className:''});
+  }
+
+  var pontos = [
+    {nome:"Cond. Olimar Magalhães",          coords:[-20.0175,-44.0595], tipo:"rede",     desc:"&Aacute;rea residencial &mdash; ponto de partida do percurso."},
+    {nome:"Cond. Jardim Indonésia",           coords:[-20.0195,-44.0580], tipo:"rede",     desc:"&Aacute;rea residencial pr&oacute;xima &agrave; escola."},
+    {nome:"Praça / Brinquedos Quebrados",     coords:[-20.0210,-44.0590], tipo:"vermelho", desc:"&#9888; Ponto de aten&ccedil;&atilde;o: equipamentos quebrados, risco para crian&ccedil;as."},
+    {nome:"Calçadas Irregulares / Ladeiras",  coords:[-20.0205,-44.0600], tipo:"vermelho", desc:"&#9888; Ponto de aten&ccedil;&atilde;o: cal&ccedil;adas quebradas, mato alto, sem acessibilidade."},
+    {nome:"Lar São Vicente de Paulo",         coords:[-20.0225,-44.0545], tipo:"verde",    desc:"&#10003; Ponto forte: institui&ccedil;&atilde;o de assist&ecirc;ncia social e acolhimento."},
+    {nome:"Centro de Saúde Alcina Campos",    coords:[-20.0232,-44.0530], tipo:"verde",    desc:"&#10003; Ponto forte: unidade de sa&uacute;de p&uacute;blica, refer&ecirc;ncia b&aacute;sica do territ&oacute;rio."},
+    {nome:"EE Pedro Evangelista Diniz",            coords:[-20.0220,-44.0560], tipo:"verde",    desc:"&#10003; Ponto forte: escola estadual, espa&ccedil;o de educa&ccedil;&atilde;o e conviv&ecirc;ncia."},
+    {nome:"Biblioteca Pública Municipal",     coords:[-20.0245,-44.0575], tipo:"verde",    desc:"&#10003; Ponto forte: equipamento cultural e educacional p&uacute;blico."},
+    {nome:"Prefeitura + Praça Coberta",       coords:[-20.0212,-44.0550], tipo:"verde",    desc:"&#10003; Ponto forte: centro administrativo e espa&ccedil;o de conviv&ecirc;ncia comunit&aacute;ria."},
+    {nome:"Estação / Praça da Estação", coords:[-20.0212,-44.0548], tipo:"rede", desc:"&#128309; Rede de prote&ccedil;&atilde;o: espa&ccedil;o p&uacute;blico de encontro e refer&ecirc;ncia hist&oacute;rica."},
+    {nome:"Conselho Tutelar",                      coords:[-20.0208,-44.0548], tipo:"rede",     desc:"&#128309; Rede de prote&ccedil;&atilde;o: &oacute;rg&atilde;o de garantia dos direitos de crian&ccedil;as e adolescentes."}
+  ];
+
+  var rota = pontos.map(function(p){ return p.coords; });
+  L.polyline(rota,{color:'#1F8A72',weight:3,opacity:.7,dashArray:'8,6'}).addTo(mapa);
+
+  pontos.forEach(function(p){
+    L.marker(p.coords,{icon:mkIcon(p.tipo)})
+      .addTo(mapa)
+      .bindPopup('<strong>'+p.nome+'</strong><br><span style="font-size:.85rem;color:#555">'+p.desc+'</span>');
+  });
+})();
+</script>
+</body>
+</html>
